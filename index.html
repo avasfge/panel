@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Платформа для штатных рекрутеров</title>
+  <style>
+    /* Сброс стилей */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f5f5f5; color: #333; }
+    .container { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: 250px;
+      background: #2c2c2c;
+      color: #fff;
+      padding: 20px;
+    }
+    .sidebar h2 { margin-bottom: 20px; }
+    .sidebar ul { list-style: none; }
+    .sidebar ul li {
+      margin-bottom: 10px;
+      cursor: pointer;
+      padding: 8px;
+      transition: background 0.3s;
+    }
+    .sidebar ul li:hover, .sidebar ul li.active {
+      background: #4a4a4a;
+    }
+    .content { flex: 1; padding: 20px; }
+    h2.section-title { margin-bottom: 15px; color: #2c2c2c; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; }
+    .form-group input, .form-group textarea {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .btn {
+      background: #AFCBFF;
+      color: #fff;
+      border: none;
+      padding: 10px 15px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background 0.3s;
+    }
+    .btn:hover { background: #8ab6ff; }
+    .vacancy-item {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+      background: #fff;
+    }
+    .vacancy-actions button { margin-right: 5px; }
+    @media (max-width: 768px) {
+      .container { flex-direction: column; }
+      .sidebar { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="sidebar">
+    <h2>Меню</h2>
+    <ul>
+      <li data-section="communication-scripts" class="active">Скрипты общения</li>
+      <li data-section="candidate-sites">Сайты поиска кандидатов</li>
+      <li data-section="candidate-form">Форма подачи кандидата</li>
+      <li data-section="vacancies">Вакансии</li>
+    </ul>
+  </div>
+  <div class="content">
+    <!-- Скрипты общения -->
+    <div id="communication-scripts" class="section">
+      <h2 class="section-title">Скрипты общения</h2>
+      <p>Здесь будут размещены скрипты общения с кандидатами.</p>
+      <textarea id="scriptsText" rows="10" style="width:100%;" placeholder="Введите скрипт..."></textarea>
+    </div>
+    <!-- Сайты поиска кандидатов -->
+    <div id="candidate-sites" class="section" style="display:none;">
+      <h2 class="section-title">Сайты поиска кандидатов</h2>
+      <ul>
+        <li><a href="https://www.linkedin.com" target="_blank">LinkedIn</a></li>
+        <li><a href="https://hh.ru" target="_blank">HeadHunter</a></li>
+        <li><a href="https://www.superjob.ru" target="_blank">SuperJob</a></li>
+        <li><a href="https://www.rabota.ru" target="_blank">Rabota.ru</a></li>
+      </ul>
+    </div>
+    <!-- Форма подачи кандидата -->
+    <div id="candidate-form" class="section" style="display:none;">
+      <h2 class="section-title">Форма подачи кандидата</h2>
+      <form id="candidateForm">
+        <div class="form-group">
+          <label for="name">Имя*</label>
+          <input type="text" id="name" name="name" required>
+        </div>
+        <div class="form-group">
+          <label for="contact">Контакт (телефон, email)*</label>
+          <input type="text" id="contact" name="contact" required>
+        </div>
+        <div class="form-group">
+          <label for="experience">Опыт работы</label>
+          <input type="text" id="experience" name="experience">
+        </div>
+        <div class="form-group">
+          <label for="comments">Комментарий</label>
+          <textarea id="comments" name="comments" rows="4"></textarea>
+        </div>
+        <button type="submit" class="btn">Отправить</button>
+      </form>
+      <div id="candidateResponse" style="margin-top:10px;"></div>
+    </div>
+    <!-- Интерфейс вакансий -->
+    <div id="vacancies" class="section" style="display:none;">
+      <h2 class="section-title">Управление вакансиями</h2>
+      <form id="vacancyForm">
+        <div class="form-group">
+          <label for="vacancyTitle">Название вакансии*</label>
+          <input type="text" id="vacancyTitle" name="title" required>
+        </div>
+        <div class="form-group">
+          <label for="vacancyDescription">Описание</label>
+          <textarea id="vacancyDescription" name="description" rows="3"></textarea>
+        </div>
+        <button type="submit" class="btn">Добавить вакансию</button>
+      </form>
+      <div id="vacancyResponse" style="margin-top:10px;"></div>
+      <h3 style="margin-top:20px;">Список вакансий</h3>
+      <div id="vacancyList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Функция для переключения разделов
+  const menuItems = document.querySelectorAll('.sidebar ul li');
+  const sections = document.querySelectorAll('.section');
+
+  menuItems.forEach(item => {
+    item.addEventListener('click', () => {
+      menuItems.forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      const sectionId = item.getAttribute('data-section');
+      sections.forEach(section => {
+        section.style.display = (section.id === sectionId) ? 'block' : 'none';
+      });
+      if (sectionId === 'vacancies') {
+        loadVacancies();
+      }
+    });
+  });
+
+  // Функция для отображения сообщений
+  function showMessage(el, message) {
+    el.innerText = message;
+    setTimeout(() => el.innerText = '', 3000);
+  }
+
+  // Работа с кандидатами (сохранение в localStorage)
+  document.getElementById('candidateForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const name = document.getElementById('name').value.trim();
+    const contact = document.getElementById('contact').value.trim();
+    const experience = document.getElementById('experience').value.trim();
+    const comments = document.getElementById('comments').value.trim();
+
+    if (!name || !contact) {
+      showMessage(document.getElementById('candidateResponse'), 'Пожалуйста, заполните обязательные поля');
+      return;
+    }
+
+    const candidate = { name, contact, experience, comments, created_at: new Date().toISOString() };
+    let candidates = JSON.parse(localStorage.getItem('candidates')) || [];
+    candidates.push(candidate);
+    localStorage.setItem('candidates', JSON.stringify(candidates));
+    showMessage(document.getElementById('candidateResponse'), 'Кандидат успешно добавлен');
+    this.reset();
+  });
+
+  // Работа с вакансиями (сохранение в localStorage)
+  document.getElementById('vacancyForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const title = document.getElementById('vacancyTitle').value.trim();
+    const description = document.getElementById('vacancyDescription').value.trim();
+
+    if (!title) {
+      showMessage(document.getElementById('vacancyResponse'), 'Название вакансии обязательно');
+      return;
+    }
+
+    const vacancy = { id: Date.now(), title, description, created_at: new Date().toISOString() };
+    let vacancies = JSON.parse(localStorage.getItem('vacancies')) || [];
+    vacancies.push(vacancy);
+    localStorage.setItem('vacancies', JSON.stringify(vacancies));
+    showMessage(document.getElementById('vacancyResponse'), 'Вакансия добавлена');
+    this.reset();
+    loadVacancies();
+  });
+
+  // Загрузка списка вакансий
+  function loadVacancies() {
+    const vacancyList = document.getElementById('vacancyList');
+    let vacancies = JSON.parse(localStorage.getItem('vacancies')) || [];
+    vacancyList.innerHTML = '';
+    vacancies.forEach(vacancy => {
+      const div = document.createElement('div');
+      div.classList.add('vacancy-item');
+      div.setAttribute('data-id', vacancy.id);
+      div.innerHTML = `
+        <strong>${vacancy.title}</strong><br>
+        <span>${vacancy.description}</span><br>
+        <div class="vacancy-actions">
+          <button onclick="editVacancy(${vacancy.id})" class="btn">Редактировать</button>
+          <button onclick="deleteVacancy(${vacancy.id})" class="btn">Удалить</button>
+        </div>
+      `;
+      vacancyList.appendChild(div);
+    });
+  }
+
+  // Редактирование вакансии
+  function editVacancy(id) {
+    let vacancies = JSON.parse(localStorage.getItem('vacancies')) || [];
+    let vacancy = vacancies.find(v => v.id === id);
+    if (!vacancy) return;
+    const newTitle = prompt('Редактировать название вакансии:', vacancy.title);
+    if (newTitle === null) return;
+    const newDescription = prompt('Редактировать описание вакансии:', vacancy.description);
+    if (newDescription === null) return;
+    vacancy.title = newTitle.trim();
+    vacancy.description = newDescription.trim();
+    localStorage.setItem('vacancies', JSON.stringify(vacancies));
+    loadVacancies();
+  }
+
+  // Удаление вакансии
+  function deleteVacancy(id) {
+    if (!confirm('Вы уверены, что хотите удалить вакансию?')) return;
+    let vacancies = JSON.parse(localStorage.getItem('vacancies')) || [];
+    vacancies = vacancies.filter(v => v.id !== id);
+    localStorage.setItem('vacancies', JSON.stringify(vacancies));
+    loadVacancies();
+  }
+</script>
+</body>
+</html>
